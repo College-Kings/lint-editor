@@ -4,9 +4,9 @@ use std::fs;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
-const LINT_FILE: &str = r"D:\renpy-sdk\tmp\College-Kings-2\lint.txt";
+const LINT_FILE: &str = r"";
 
-const SCENE_RANGE: [&str; 128] = [
+const SCENE_RANGE: [&str; 132] = [
     "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "13a", "14", "15", "15a",
     "16", "17", "18", "18a", "18b", "18c", "19", "20", "21", "21a", "21b", "22", "22a", "22b",
     "23", "24", "25", "26", "27", "28", "28a", "29", "30", "31", "32", "32a", "33", "33a", "34",
@@ -20,8 +20,7 @@ const SCENE_RANGE: [&str; 128] = [
     "68", // "69",
     // "69a",
     "69b", "70", "71", "72", // "72a",
-    "73", "74", "74a", "75", "76", "76a", "76b", // "77",
-    // "78",
+    "73", "74", "74a", "75", "76", "76a", "76b", "77", // "78",
     "78a", "79", "80", "81", "82", "82a",
     // "82b",
     // "82c",
@@ -29,13 +28,11 @@ const SCENE_RANGE: [&str; 128] = [
     // "82e",
     "82f", // "82g",
     // "82h",
-    // "83",
-    "83a", "83b", // "83c",
+    "83", "83a", "83b", // "83c",
     "83d", // "83e",
     // "83f",
     // "83g",
-    "83h", "83i", "84",  // "84a",
-    "84b", // "84c",
+    "83h", "83i", "84", "84a", "84b", // "84c",
     "84d", // "84e",
     // "84f",
     // "84g",
@@ -63,8 +60,7 @@ const SCENE_RANGE: [&str; 128] = [
     // "95a",
     // "96",
     // "97",
-    "98", "99", // "100",
-    // "101",
+    "98", "99", "100", // "101",
     // "101a",
     "102",
     // "103",
@@ -79,7 +75,11 @@ fn main() {
     let file = File::open(LINT_FILE).expect("Unable to open file");
     let lines = BufReader::new(file).lines();
 
-    for line in lines {
+    for (i, line) in lines.into_iter().enumerate() {
+        if i == 0 {
+            continue;
+        }
+
         let line = line.unwrap();
         let line = line.trim();
         if line.is_empty() {
