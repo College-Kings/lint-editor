@@ -4,7 +4,7 @@ use std::fs;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
-const LINT_FILE: &str = r"D:\renpy-sdk\tmp\College-Kings-2\lint.txt";
+const LINT_FILE: &str = r"C:\Users\kiloo\Documents\renpy-sdk\tmp\College-Kings-2\lint.txt";
 
 const SCENE_RANGE: [&str; 165] = [
     "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "13a", "14", "15", "15a",
@@ -61,14 +61,14 @@ fn main() {
         let scene_re = Regex::new(r"scene([^_.]+)").unwrap();
         if let Some(captures) = scene_re.captures(line) {
             if let Some(scene) = captures.get(1) {
-                if !SCENE_RANGE.contains(&scene.as_str()) {
-                    continue;
-                }
-
                 if current_scene != scene.as_str() {
                     unique_lines.push(format!("\n{}:", scene.as_str()));
                     current_scene = scene.as_str().to_string();
                 }
+
+                // if !SCENE_RANGE.contains(&scene.as_str()) {
+                //     continue;
+                // }
             }
         }
 
