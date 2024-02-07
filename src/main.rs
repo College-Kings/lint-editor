@@ -2,31 +2,36 @@ use regex::Regex;
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::io::{BufReader, Read};
 
-const LINT_FILE: &str = r"D:\renpy-sdk\tmp\College-Kings-2\lint.txt";
+const LINT_FILE: &str = r"D:\renpy-8.2.0-sdk\tmp\College-Kings-2\lint.txt";
 
-const SCENE_RANGE: [&str; 0] = [];
-
-fn main() {
+fn main() -> std::io::Result<()> {
     let mut unique_errors: HashSet<String> = HashSet::new();
     let mut error_map: HashMap<String, Vec<String>> = HashMap::new();
 
     let file = File::open(LINT_FILE).expect("Unable to open file");
-    let lines = BufReader::new(file).lines();
+    let mut contents = String::new();
+    BufReader::new(file)
+        .read_to_string(&mut contents)
+        .expect("Unable to read file");
+    let chunks: Vec<&str> = contents.split("\r\n\r\n").collect();
 
-    for (i, line) in lines.into_iter().enumerate() {
+    for (i, chunk) in chunks.into_iter().enumerate() {
         if i == 0 {
             continue;
         }
 
-        let line = line.unwrap();
-        let line = line.trim();
+        let line = chunk.trim();
         if line.is_empty() {
             continue;
         }
 
-        if line.contains("game/ep3/") {
+        // if line.ends_with("is not an image.") || line.ends_with(".webp', which is not loadable.") {
+        //     continue;
+        // }
+
+        if line.starts_with("Statistics:") {
             break;
         }
 
@@ -35,9 +40,6 @@ fn main() {
         if let Some(captures) = scene_re.captures(line) {
             if let Some(scene) = captures.get(1) {
                 current_scene = scene.as_str().to_string();
-                if !SCENE_RANGE.is_empty() && !SCENE_RANGE.contains(&current_scene.as_str()) {
-                    current_scene.push_str(" - MISSING");
-                }
             }
         }
 
@@ -57,8 +59,40 @@ fn main() {
             .or_insert(vec![line.to_string()]);
     }
 
+    let sort_regex = Regex::new(r"(\d+)([a-z])*").unwrap();
+
     let mut sorted_errors: Vec<(String, Vec<String>)> = error_map.into_iter().collect();
-    sorted_errors.sort();
+    sorted_errors.sort_by(|a, b| {
+        let a = &a.0;
+        let b = &b.0;
+
+        match (a == "Other", b == "Other") {
+            (true, true) => return std::cmp::Ordering::Equal,
+            (true, false) => return std::cmp::Ordering::Greater,
+            (false, true) => return std::cmp::Ordering::Less,
+            (false, false) => {}
+        }
+
+        let a_captures = sort_regex.captures(a).unwrap();
+        let a_num = a_captures
+            .get(1)
+            .unwrap()
+            .as_str()
+            .parse::<i32>()
+            .unwrap_or(0);
+        let a_char = a_captures.get(2).map(|m| m.as_str()).unwrap_or("");
+
+        let b_captures = sort_regex.captures(b).unwrap();
+        let b_num = b_captures
+            .get(1)
+            .unwrap()
+            .as_str()
+            .parse::<i32>()
+            .unwrap_or(0);
+        let b_char = b_captures.get(2).map(|m| m.as_str()).unwrap_or("");
+
+        (a_num, a_char).cmp(&(b_num, b_char))
+    });
 
     let mut lint_lines = Vec::new();
 
@@ -76,5 +110,7 @@ fn main() {
         lint_lines.push("\n</details>".to_string());
     }
 
-    fs::write(LINT_FILE, lint_lines.join("\n")).expect("Unable to write file");
+    fs::write(LINT_FILE, lint_lines.join("\n"))?;
+
+    Ok(())
 }
