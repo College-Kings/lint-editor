@@ -4,7 +4,7 @@ use std::fs;
 use std::fs::File;
 use std::io::{BufReader, Read};
 
-const LINT_FILE: &str = r"D:\renpy-8.2.0-sdk\tmp\College-Kings-2\lint.txt";
+const LINT_FILE: &str = r"D:\renpy-8.2.0-sdk\tmp\college-kings-2-dev\lint.txt";
 
 fn main() -> std::io::Result<()> {
     let mut unique_errors: HashSet<String> = HashSet::new();
