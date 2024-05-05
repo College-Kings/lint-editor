@@ -6,6 +6,9 @@ use std::io::{BufReader, Read};
 
 const LINT_FILE: &str = r"D:\renpy-8.2.0-sdk\tmp\college-kings-2-dev\lint.txt";
 
+const IGNORE_SCENES: [&str; 0] = [];
+const IGNORE_FILES: [&str; 1] = ["game/config.rpy"];
+
 fn main() -> std::io::Result<()> {
     let mut unique_errors: HashSet<String> = HashSet::new();
     let mut error_map: HashMap<String, Vec<String>> = HashMap::new();
@@ -27,9 +30,13 @@ fn main() -> std::io::Result<()> {
             continue;
         }
 
-        // if line.ends_with("is not an image.") || line.ends_with(".webp', which is not loadable.") {
-        //     continue;
-        // }
+        if IGNORE_FILES.contains(&line.split(':').next().unwrap()) {
+            continue;
+        }
+
+        if line.ends_with("is not an image.") || line.ends_with(".webp', which is not loadable.") {
+            continue;
+        }
 
         if line.starts_with("Statistics:") {
             break;
@@ -40,6 +47,9 @@ fn main() -> std::io::Result<()> {
         if let Some(captures) = scene_re.captures(line) {
             if let Some(scene) = captures.get(1) {
                 current_scene = scene.as_str().to_string();
+                if IGNORE_SCENES.contains(&current_scene.as_str()) {
+                    continue;
+                }
             }
         }
 
@@ -97,17 +107,17 @@ fn main() -> std::io::Result<()> {
     let mut lint_lines = Vec::new();
 
     for (scene_name, lines) in sorted_errors {
-        lint_lines.push("<details>".to_string());
-        lint_lines.push(format!(
-            "<summary>{}: ({})</summary>\n",
-            scene_name,
-            lines.len()
-        ));
+        // lint_lines.push("<details>".to_string());
+        // lint_lines.push(format!(
+        //     "<summary>{}: ({})</summary>\n",
+        //     scene_name,
+        //     lines.len()
+        // ));
 
         for line in lines {
             lint_lines.push(format!("- [ ] {}", line));
         }
-        lint_lines.push("\n</details>".to_string());
+        // lint_lines.push("\n</details>".to_string());
     }
 
     fs::write(LINT_FILE, lint_lines.join("\n"))?;
