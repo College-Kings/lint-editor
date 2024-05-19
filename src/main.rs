@@ -1,3 +1,4 @@
+use lazy_static::lazy_static;
 use regex::Regex;
 use std::collections::{HashMap, HashSet};
 use std::fs;
@@ -7,7 +8,13 @@ use std::io::{BufReader, Read};
 const LINT_FILE: &str = r"D:\renpy-8.2.0-sdk\tmp\college-kings-2-dev\lint.txt";
 
 const IGNORE_SCENES: [&str; 0] = [];
-const IGNORE_FILES: [&str; 1] = ["game/config.rpy"];
+const IGNORE_FILES: [&str; 0] = []; // ["game/config.rpy"];
+
+lazy_static! {
+    static ref SCENE_REGEX: Regex = Regex::new(r"scene([^_.]+)").unwrap();
+    static ref ERROR_REGEX: Regex = Regex::new(r"'([^']+)'").unwrap();
+    static ref SORT_REGEX: Regex = Regex::new(r"(\d+)([a-z])*").unwrap();
+}
 
 fn main() -> std::io::Result<()> {
     let mut unique_errors: HashSet<String> = HashSet::new();
@@ -34,17 +41,16 @@ fn main() -> std::io::Result<()> {
             continue;
         }
 
-        if line.ends_with("is not an image.") || line.ends_with(".webp', which is not loadable.") {
-            continue;
-        }
+        // if line.ends_with("is not an image.") || line.ends_with(".webp', which is not loadable.") {
+        //     continue;
+        // }
 
         if line.starts_with("Statistics:") {
             break;
         }
 
         let mut current_scene = "Other".to_string();
-        let scene_re = Regex::new(r"scene([^_.]+)").unwrap();
-        if let Some(captures) = scene_re.captures(line) {
+        if let Some(captures) = SCENE_REGEX.captures(line) {
             if let Some(scene) = captures.get(1) {
                 current_scene = scene.as_str().to_string();
                 if IGNORE_SCENES.contains(&current_scene.as_str()) {
@@ -53,8 +59,7 @@ fn main() -> std::io::Result<()> {
             }
         }
 
-        let error_re = Regex::new(r"'([^']+)'").unwrap();
-        if let Some(captures) = error_re.captures(line) {
+        if let Some(captures) = ERROR_REGEX.captures(line) {
             if let Some(error) = captures.get(1) {
                 if unique_errors.contains(error.as_str()) {
                     continue;
@@ -69,8 +74,6 @@ fn main() -> std::io::Result<()> {
             .or_insert(vec![line.to_string()]);
     }
 
-    let sort_regex = Regex::new(r"(\d+)([a-z])*").unwrap();
-
     let mut sorted_errors: Vec<(String, Vec<String>)> = error_map.into_iter().collect();
     sorted_errors.sort_by(|a, b| {
         let a = &a.0;
@@ -83,7 +86,7 @@ fn main() -> std::io::Result<()> {
             (false, false) => {}
         }
 
-        let a_captures = sort_regex.captures(a).unwrap();
+        let a_captures = SORT_REGEX.captures(a).unwrap();
         let a_num = a_captures
             .get(1)
             .unwrap()
@@ -92,7 +95,7 @@ fn main() -> std::io::Result<()> {
             .unwrap_or(0);
         let a_char = a_captures.get(2).map(|m| m.as_str()).unwrap_or("");
 
-        let b_captures = sort_regex.captures(b).unwrap();
+        let b_captures = SORT_REGEX.captures(b).unwrap();
         let b_num = b_captures
             .get(1)
             .unwrap()
@@ -107,17 +110,17 @@ fn main() -> std::io::Result<()> {
     let mut lint_lines = Vec::new();
 
     for (scene_name, lines) in sorted_errors {
-        // lint_lines.push("<details>".to_string());
-        // lint_lines.push(format!(
-        //     "<summary>{}: ({})</summary>\n",
-        //     scene_name,
-        //     lines.len()
-        // ));
+        lint_lines.push("<details>".to_string());
+        lint_lines.push(format!(
+            "<summary>{}: ({})</summary>\n",
+            scene_name,
+            lines.len()
+        ));
 
         for line in lines {
             lint_lines.push(format!("- [ ] {}", line));
         }
-        // lint_lines.push("\n</details>".to_string());
+        lint_lines.push("\n</details>".to_string());
     }
 
     fs::write(LINT_FILE, lint_lines.join("\n"))?;
